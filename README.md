@@ -28,7 +28,7 @@ testscript:
 Output:
 
 ```
-$ logdog test/processes.yaml
+$ logdog < test/processes.yaml
 echo       | Starting Process P {name = "echo", runner = Shell "echo bar && sleep 1 && exit 1", resumption = Resume {succeed = False, failure = True}}
 osname     | Starting Process P {name = "osname", runner = Program "uname" ["-a"], resumption = Resume {succeed = False, failure = False}}
 testscript | Starting Process P {name = "testscript", runner = Program "./test/test.bash" [], resumption = Resume {succeed = True, failure = True}}
