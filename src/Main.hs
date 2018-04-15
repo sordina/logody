@@ -5,12 +5,13 @@ module Main where
 
 import Prelude hiding (log)
 
-import Data.Yaml (ToJSON, FromJSON, ParseException(AesonException), decodeFileEither)
+import Data.Yaml (ToJSON, FromJSON, ParseException(AesonException), decodeEither')
 import GHC.Generics
 import Control.Monad
 import Data.Maybe
 import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (unpack)
+import Data.ByteString.Char8 (pack)
 import Data.Either
 import Data.Char
 import System.IO
@@ -66,24 +67,21 @@ main :: IO ()
 main = do
   as <- getArgs
   case as
-    of [conf] -> do
-         res <- decodeProcesses conf
+    of ("-h":_)     -> help
+       ("--help":_) -> help
+       ps           -> do
+         res <- decodeProcesses ps
          case res of Left  es -> print es
                      Right rs -> sallyForth rs
 
-       []           -> help >> exitFailure
-       ("-h":_)     -> help
-       ("--help":_) -> help
-       _            -> help >> exitFailure
-
 help :: IO ()
 help = do
-  putStrLn "Usage: logdog CONFIG_FILE"
+  putStrLn "Usage: logdog [SHELL]* [< CONFIG_FILE]"
   putStrLn ""
-  putStrLn "File Format Example:"
+  putStrLn "Config Format Example:"
   putStrLn ""
   putStrLn "    ---"
-  putStrLn "    foo:"
+  putStrLn "    pluckProcesses:"
   putStrLn "      process: uname"
   putStrLn "      args:"
   putStrLn "        - \"-a\""
@@ -101,13 +99,27 @@ help = do
 
 -- Config File Parsing
 
-decodeProcessConfig :: String -> IO ( Either ParseException (Map String ProcessConfigItem) )
-decodeProcessConfig = decodeFileEither
+decodeProcessConfig :: String -> Either ParseException (Map String ProcessConfigItem)
+decodeProcessConfig = decodeEither' . pack
 
-decodeProcesses :: String -> IO ( Either [ParseException] [Process])
-decodeProcesses fp = do
-  pc <- mapLeft (:[]) <$> decodeProcessConfig fp
-  return (pc >>= catEithers . map makeProcess . toAscList)
+makeShell :: Int -> String -> Process
+makeShell i p = P ("process_" ++ show i) (Shell p) (Resume False False)
+
+decodeProcesses :: [String] -> IO ( Either [ParseException] [Process])
+decodeProcesses ps = do
+  conf <- getContents
+  case (ps, conf)
+    of ([], "") -> return $ crash "pass a config into STDIN, or specify shell arguments"
+       (_,  "") -> return $ Right $ zipWith makeShell [0..] ps
+       ([], _)  -> do
+         let pc = mapLeft (:[]) $ decodeProcessConfig conf
+         return (pc >>= catEithers . map makeProcess . toAscList)
+       (_, _)  -> do
+         let pc = mapLeft (:[]) $ decodeProcessConfig conf
+         return (pc >>= pluckProcesses ps . catEithers . map makeProcess . toAscList)
+
+pluckProcesses :: [String] -> Either a [Process] -> Either a [Process]
+pluckProcesses ps = fmap (filter (flip elem ps . name))
 
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft  f (Left  a) = Left (f a)
