@@ -59,16 +59,15 @@ main :: IO ()
 main = do
   as <- getArgs
   case as
-    of []           -> help >> exitFailure
-       ("-h":_)     -> help
-       ("--help":_) -> help
-
-       [conf] -> do
+    of [conf] -> do
          res <- decodeProcesses conf
          case res of Left  es -> print es
-                     Right rs -> go rs
+                     Right rs -> sallyForth rs
 
-       _ -> help >> exitFailure
+       []           -> help >> exitFailure
+       ("-h":_)     -> help
+       ("--help":_) -> help
+       _            -> help >> exitFailure
 
 help :: IO ()
 help = do
@@ -110,13 +109,13 @@ mapLeft _f (Right b) = Right b
 -- Process Construction
 
 makeProcess :: (String, ProcessConfigItem) -> Either [ParseException] Process
-makeProcess (_, PCI Nothing Nothing _ _)              = crash "specify process or a shell"
+makeProcess (_, PCI Nothing  Nothing  _ _)            = crash "specify process or a shell"
 makeProcess (_, PCI (Just _) (Just _) _ _)            = crash "specify EITHER a process or a shell"
+makeProcess (_, PCI Nothing  (Just _) _ (Just (_:_))) = crash "shell commands do NOT take arguments"
 makeProcess (n, PCI (Just p) Nothing  r Nothing)      = P n (Program p []) <$> (makeResume r)
 makeProcess (n, PCI (Just p) Nothing  r (Just a))     = P n (Program p a)  <$> (makeResume r)
-makeProcess (n, PCI Nothing (Just s)  r Nothing)      = P n (Shell   s)    <$> (makeResume r)
-makeProcess (n, PCI Nothing (Just s)  r (Just []))    = P n (Shell   s)    <$> (makeResume r)
-makeProcess (_, PCI Nothing (Just _)  _ (Just (_:_))) = crash "shell commands do NOT take arguments"
+makeProcess (n, PCI Nothing  (Just s) r Nothing)      = P n (Shell   s)    <$> (makeResume r)
+makeProcess (n, PCI Nothing  (Just s) r (Just []))    = P n (Shell   s)    <$> (makeResume r)
 
 crash :: String -> Either [ParseException] b
 crash s = Left [ AesonException s ]
@@ -163,39 +162,46 @@ makeLogger width logs p s = writeChan logs line
   line = name p ++ padding ++ " | " ++ (filter isPrint s)
   padding = replicate (width - length (name p)) ' '
 
-go :: [Process] -> IO ()
-go ps = do
+-- Process Inception and Running
+
+sallyForth :: [Process] -> IO ()
+sallyForth ps = do
   logs <- newLogChan
   let logger = makeLogger (maximum (map (length . name) ps)) logs
-  a1 <- async $ mapConcurrently_ (run logger) ps
+  a1 <- async $ mapConcurrently_ (embark logger) ps
   a2 <- async $ printLogs logs
   wait a1
   closeChan logs
   wait a2
 
--- The main guy
---
-run :: Logger -> Process -> IO ()
-run log p =
+embark :: Logger -> Process -> IO ()
+embark log p =
   case runner p
-    of Shell   s    -> log p ("Starting Process " ++ show p) >> kickoffShell      log p s
-       Program s as -> log p ("Starting Process " ++ show p) >> kickoffProgram as log p s
+    of Shell   s    -> log p ("Starting Process " ++ show p) >> startShell      log p s
+       Program s as -> log p ("Starting Process " ++ show p) >> startProgram as log p s
 
-kickoffShell :: Logger -> Process -> String -> IO ()
-kickoffShell log p s = createProcess (P.shell s) >>= kickoff kickoffShell log p s
+startShell :: Logger -> Process -> String -> IO ()
+startShell log p s = createProcess (P.shell s) >>= manageProcess startShell log p s
 
-kickoffProgram :: [String] -> Logger -> Process -> String -> IO ()
-kickoffProgram as log p s = createProcess (P.proc s as) >>= kickoff (kickoffProgram as) log p s
+startProgram :: [String] -> Logger -> Process -> String -> IO ()
+startProgram as log p s = createProcess (P.proc s as) >>= manageProcess (startProgram as) log p s
 
-kickoff :: (Logger -> Process -> t -> IO ())
+manageProcess :: (Logger -> Process -> t -> IO ())
         -> Logger -> Process -> t
         -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
         -> IO ()
-kickoff _ log p _ (_stdin, Nothing, _stderr, _pid) = log p "Failure -> Couldn't get STDOUT of Process"
-kickoff f log p s (_stdin, Just stdout_h, _stderr, pid_h) = do
-  untilM (hIsEOF stdout_h) $ do
+manageProcess f log p s (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
+  stdout_reader <- async $ untilM (hIsEOF stdout_h) $ do
     l <- hGetLine stdout_h
     log p ("stdout -> " ++ l)
+
+  stderr_reader <- async $ untilM (hIsEOF stderr_h) $ do
+    l <- hGetLine stderr_h
+    log p ("stderr -> " ++ l)
+
+  wait stdout_reader
+  wait stderr_reader
+
   code <- P.waitForProcess pid_h
   case code
     of ExitSuccess -> do
@@ -209,10 +215,15 @@ kickoff f log p s (_stdin, Just stdout_h, _stderr, pid_h) = do
            log p ("Restarting process after failure" ++ show c)
            f log p s
 
+manageProcess _ log p _ _ = log p "Failure -> Couldn't get handles for process"
+
 untilM :: Monad m => m Bool -> m () -> m ()
 untilM c m = do
   b <- c
   when (not b) (m >> untilM c m)
 
 createProcess :: P.CreateProcess -> IO (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
-createProcess p = P.createProcess p { P.std_out = P.CreatePipe }
+createProcess p =
+  P.createProcess p { P.std_out = P.CreatePipe
+                    , P.std_err = P.CreatePipe
+                    }
