@@ -19,6 +19,8 @@ import Control.Concurrent.Async
 import qualified System.Process as P
 import qualified Control.Concurrent.Chan as C
 
+-- Types and Data
+
 data ProcessConfigItem = PCI
   { process :: Maybe String
   , shell   :: Maybe String
@@ -47,6 +49,52 @@ data Resume = Resume
   }
   deriving (Show, Generic)
 
+type ChanM a = C.Chan (Maybe a)
+
+type Logger = Process -> String -> IO ()
+
+-- Main
+
+main :: IO ()
+main = do
+  as <- getArgs
+  case as
+    of []           -> help >> exitFailure
+       ("-h":_)     -> help
+       ("--help":_) -> help
+
+       [conf] -> do
+         res <- decodeProcesses conf
+         case res of Left  es -> print es
+                     Right rs -> go rs
+
+       _ -> help >> exitFailure
+
+help :: IO ()
+help = do
+  putStrLn "Usage: logdog CONFIG_FILE"
+  putStrLn ""
+  putStrLn "File Format Example:"
+  putStrLn ""
+  putStrLn "    ---"
+  putStrLn "    foo:"
+  putStrLn "      process: uname"
+  putStrLn "      args:"
+  putStrLn "        - \"-a\""
+  putStrLn "    "
+  putStrLn "    bar_:"
+  putStrLn "      shell: \"echo bar && sleep 1 && exit 1\""
+  putStrLn "      resume:"
+  putStrLn "        - fail"
+  putStrLn "    "
+  putStrLn "    baz__:"
+  putStrLn "      process: ./test/test.bash"
+  putStrLn "      resume:"
+  putStrLn "        - succeed"
+  putStrLn "        - fail"
+
+-- Config File Parsing
+
 decodeProcessConfig :: String -> IO ( Either ParseException (Map String ProcessConfigItem) )
 decodeProcessConfig = decodeFileEither
 
@@ -58,6 +106,8 @@ decodeProcesses fp = do
 mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft  f (Left  a) = Left (f a)
 mapLeft _f (Right b) = Right b
+
+-- Process Construction
 
 makeProcess :: (String, ProcessConfigItem) -> Either [ParseException] Process
 makeProcess (_, PCI Nothing Nothing _ _)              = crash "specify process or a shell"
@@ -88,42 +138,7 @@ catEithers l =
   of ([], xs) -> Right xs
      (es, _ ) -> Left (mconcat es)
 
-help :: IO ()
-help = do
-  putStrLn "Usage: logdog CONFIG_FILE"
-  putStrLn ""
-  putStrLn "File Format Example:"
-  putStrLn ""
-  putStrLn "    ---"
-  putStrLn "    foo:"
-  putStrLn "      process: uname"
-  putStrLn "      args:"
-  putStrLn "        - \"-a\""
-  putStrLn "    "
-  putStrLn "    bar_:"
-  putStrLn "      shell: \"echo bar && sleep 1 && exit 1\""
-  putStrLn "      resume:"
-  putStrLn "        - fail"
-  putStrLn "    "
-  putStrLn "    baz__:"
-  putStrLn "      process: ./test/test.bash"
-  putStrLn "      resume:"
-  putStrLn "        - succeed"
-  putStrLn "        - fail"
-
-main :: IO ()
-main = do
-  args <- getArgs
-  case args
-    of []         -> help >> exitFailure
-       ["-h"]     -> help
-       ["--help"] -> help
-       [conf]     -> do
-         res <- decodeProcesses conf
-         case res of Left  es -> print es
-                     Right rs -> go rs
-
-type ChanM a = C.Chan (Maybe a)
+-- Logging
 
 newLogChan :: IO (ChanM String)
 newLogChan = C.newChan
@@ -133,7 +148,7 @@ getChanContents c = do
   cs <- C.getChanContents c
   return $ catMaybes $ takeWhile isJust cs
 
-writeChan :: C.Chan (Maybe a) -> a -> IO ()
+writeChan :: ChanM a -> a -> IO ()
 writeChan c a = C.writeChan c (Just a)
 
 printLogs :: ChanM String -> IO ()
@@ -142,13 +157,16 @@ printLogs logs = getChanContents logs >>= mapM_ putStrLn
 closeChan :: ChanM a -> IO ()
 closeChan c = C.writeChan c Nothing
 
-type Logger = Process -> String -> IO ()
+makeLogger :: Int -> ChanM String -> Process -> String -> IO ()
+makeLogger width logs p s = writeChan logs line
+  where
+  line = name p ++ padding ++ " | " ++ (filter isPrint s)
+  padding = replicate (width - length (name p)) ' '
 
 go :: [Process] -> IO ()
 go ps = do
-  let namewidth = maximum (map (length . name) ps)
   logs <- newLogChan
-  let logger p s = writeChan logs (name p ++ replicate (namewidth - length (name p)) ' ' ++ " | " ++ (filter isPrint s))
+  let logger = makeLogger (maximum (map (length . name) ps)) logs
   a1 <- async $ mapConcurrently_ (run logger) ps
   a2 <- async $ printLogs logs
   wait a1
