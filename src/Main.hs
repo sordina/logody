@@ -89,7 +89,27 @@ catEithers l =
      (es, _ ) -> Left (mconcat es)
 
 help :: IO ()
-help = putStrLn "Usage: logdog CONFIG_FILE"
+help = do
+  putStrLn "Usage: logdog CONFIG_FILE"
+  putStrLn ""
+  putStrLn "File Format Example:"
+  putStrLn ""
+  putStrLn "    ---"
+  putStrLn "    foo:"
+  putStrLn "      process: uname"
+  putStrLn "      args:"
+  putStrLn "        - \"-a\""
+  putStrLn "    "
+  putStrLn "    bar_:"
+  putStrLn "      shell: \"echo bar && sleep 1 && exit 1\""
+  putStrLn "      resume:"
+  putStrLn "        - fail"
+  putStrLn "    "
+  putStrLn "    baz__:"
+  putStrLn "      process: ./test/test.bash"
+  putStrLn "      resume:"
+  putStrLn "        - succeed"
+  putStrLn "        - fail"
 
 main :: IO ()
 main = do
@@ -140,8 +160,8 @@ go ps = do
 run :: Logger -> Process -> IO ()
 run log p =
   case runner p
-    of Shell   s    -> log p ("Starting Process" ++ show p) >> kickoffShell      log p s
-       Program s as -> log p ("Starting Process" ++ show p) >> kickoffProgram as log p s
+    of Shell   s    -> log p ("Starting Process " ++ show p) >> kickoffShell      log p s
+       Program s as -> log p ("Starting Process " ++ show p) >> kickoffProgram as log p s
 
 kickoffShell :: Logger -> Process -> String -> IO ()
 kickoffShell log p s = createProcess (P.shell s) >>= kickoff kickoffShell log p s
