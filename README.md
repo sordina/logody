@@ -62,4 +62,3 @@ testscript | stdout -> test.bash 9
 ## TODO
 
 * Color Lines
-* Args
