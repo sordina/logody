@@ -1,15 +1,15 @@
 ---
-foo:
+osname:
   process: uname
   args:
     - "-a"
 
-bar_:
+echo:
   shell: "echo bar && sleep 1 && exit 1"
   resume:
     - fail
 
-baz__:
+testscript:
   process: ./test/test.bash
   resume:
     - succeed
