@@ -1,0 +1,32 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: c79a062ee46fb82acf8328f49fcb692e11530bfaa26af3519e7dc85069f17a1f
+
+name:           logdog
+version:        0.1.0.0
+category:       Web
+homepage:       https://github.com/githubuser/logdog#readme
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2018 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    README.md
+
+executable logdog
+  main-is: Main.hs
+  hs-source-dirs:
+      src
+  build-depends:
+      async
+    , base >=4.7 && <5
+    , yaml
+  other-modules:
+      Paths_logdog
+  default-language: Haskell2010

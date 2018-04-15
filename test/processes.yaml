@@ -1,0 +1,16 @@
+---
+foo:
+  process: uname
+  resume:
+    - succeed
+
+bar:
+  shell: "echo bar && sleep 1 && exit 1"
+  resume:
+    - fail
+
+baz:
+  shell: "echo bla"
+  resume:
+    - succeed
+    - fail
