@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1febb4753b71936a3ce72bcb6e590a739c6bee0c6a34e93575fba5bf1dfd023b
+-- hash: 1e81b485d85f34bf5eaa6d9e80bd65ab7ea903c9e3b64eaa6e0aec12587183ac
 
 name:           logdog
 version:        0.1.0.0
@@ -24,8 +24,10 @@ executable logdog
   hs-source-dirs:
       src
   build-depends:
-      async
+      aeson
+    , async
     , base >=4.7 && <5
+    , bytestring
     , containers
     , process
     , yaml

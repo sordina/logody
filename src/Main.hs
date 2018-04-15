@@ -5,16 +5,18 @@ module Main where
 
 import Prelude hiding (log)
 
-import Data.Yaml
+import Data.Yaml (ToJSON, FromJSON, ParseException(AesonException), decodeFileEither)
 import GHC.Generics
 import Control.Monad
 import Data.Maybe
+import Data.Aeson (encode)
+import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Either
 import Data.Char
 import System.IO
 import System.Exit
 import System.Environment
-import Data.Map hiding (map, filter)
+import Data.Map (Map, toAscList)
 import Control.Concurrent.Async
 import qualified System.Process as P
 import qualified Control.Concurrent.Chan as C
@@ -28,8 +30,6 @@ data ProcessConfigItem = PCI
   , args    :: Maybe [ String ]
   }
   deriving (Show, Generic)
-
-instance FromJSON ProcessConfigItem
 
 data Process = P
   { name       :: String
@@ -52,6 +52,13 @@ data Resume = Resume
 type ChanM a = C.Chan (Maybe a)
 
 type Logger = Process -> String -> IO ()
+
+-- Instances
+
+instance FromJSON ProcessConfigItem
+instance ToJSON Process
+instance ToJSON Runner
+instance ToJSON Resume
 
 -- Main
 
@@ -177,8 +184,8 @@ sallyForth ps = do
 embark :: Logger -> Process -> IO ()
 embark log p =
   case runner p
-    of Shell   s    -> log p ("Starting Process " ++ show p) >> startShell      log p s
-       Program s as -> log p ("Starting Process " ++ show p) >> startProgram as log p s
+    of Shell   s    -> log p ("Starting Process " ++ unpack (encode p)) >> startShell      log p s
+       Program s as -> log p ("Starting Process " ++ show p)            >> startProgram as log p s
 
 startShell :: Logger -> Process -> String -> IO ()
 startShell log p s = createProcess (P.shell s) >>= manageProcess startShell log p s
