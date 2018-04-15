@@ -3,14 +3,17 @@
 
 module Main where
 
+import Prelude hiding (log)
+
 import Data.Yaml
 import GHC.Generics
 import Control.Monad
 import Data.Maybe
 import System.Exit
 import Data.Either
+import Data.Char
 import System.IO
-import Data.Map hiding (map)
+import Data.Map hiding (map, filter)
 import Control.Concurrent.Async
 import qualified System.Process as P
 import qualified Control.Concurrent.Chan as C
@@ -18,7 +21,8 @@ import qualified Control.Concurrent.Chan as C
 data ProcessConfigItem = PCI
   { process :: Maybe String
   , shell   :: Maybe String
-  , resume  :: [ String ]
+  , resume  :: Maybe [ String ]
+  , args    :: Maybe [ String ]
   }
   deriving (Show, Generic)
 
@@ -32,7 +36,7 @@ data Process = P
   deriving (Show, Generic)
 
 data Runner
-  = Program String
+  = Program String [String]
   | Shell   String
   deriving (Eq, Show, Generic)
 
@@ -55,18 +59,22 @@ mapLeft  f (Left  a) = Left (f a)
 mapLeft _f (Right b) = Right b
 
 makeProcess :: (String, ProcessConfigItem) -> Either [ParseException] Process
-makeProcess (_, PCI Nothing Nothing _  ) = crash "specify process or a shell"
-makeProcess (_, PCI (Just _) (Just _) _) = crash "specify EITHER a process or a shell"
-makeProcess (n, PCI (Just p) Nothing  r) = P n (Program p) <$> (makeResume r)
-makeProcess (n, PCI Nothing (Just s)  r) = P n (Shell   s) <$> (makeResume r)
+makeProcess (_, PCI Nothing Nothing _ _)              = crash "specify process or a shell"
+makeProcess (_, PCI (Just _) (Just _) _ _)            = crash "specify EITHER a process or a shell"
+makeProcess (n, PCI (Just p) Nothing  r Nothing)      = P n (Program p []) <$> (makeResume r)
+makeProcess (n, PCI (Just p) Nothing  r (Just a))     = P n (Program p a)  <$> (makeResume r)
+makeProcess (n, PCI Nothing (Just s)  r Nothing)      = P n (Shell   s)    <$> (makeResume r)
+makeProcess (n, PCI Nothing (Just s)  r (Just []))    = P n (Shell   s)    <$> (makeResume r)
+makeProcess (_, PCI Nothing (Just _)  _ (Just (_:_))) = crash "shell commands do NOT take arguments"
 
 crash :: String -> Either [ParseException] b
 crash s = Left [ AesonException s ]
 
-makeResume :: [String] -> Either [ParseException] Resume
-makeResume [] = return $ Resume False False
-makeResume ("succeed": xs) = setSucceed <$> makeResume xs
-makeResume ("fail"   : xs) = setFail    <$> makeResume xs
+makeResume :: Maybe [String] -> Either [ParseException] Resume
+makeResume Nothing = return $ Resume False False
+makeResume (Just []) = return $ Resume False False
+makeResume (Just ("succeed": xs)) = setSucceed <$> makeResume (Just xs)
+makeResume (Just ("fail"   : xs)) = setFail    <$> makeResume (Just xs)
 makeResume _  = crash "Resumption must only be one of succeed or fail"
 
 setSucceed, setFail :: Resume -> Resume
@@ -109,7 +117,7 @@ type Logger = Process -> String -> IO ()
 go :: [Process] -> IO ()
 go ps = do
   logs <- newLogChan
-  let logger p s = writeChan logs (name p ++ " | " ++ s)
+  let logger p s = writeChan logs (name p ++ " | " ++ (filter isPrint s))
   a1 <- async $ mapConcurrently_ (run logger) ps
   a2 <- async $ printLogs logs
   wait a1
@@ -119,13 +127,22 @@ go ps = do
 -- The main guy
 --
 run :: Logger -> Process -> IO ()
-run log p@(runner -> Shell   s) = log p ("Starting Process" ++ show p) >> kickoffShell   log p s
-run log p@(runner -> Program s) = log p ("Starting Process" ++ show p) >> kickoffProgram log p s
+run log p =
+  case runner p
+    of Shell   s    -> log p ("Starting Process" ++ show p) >> kickoffShell      log p s
+       Program s as -> log p ("Starting Process" ++ show p) >> kickoffProgram as log p s
 
-kickoffShell   log p s = createProcess (P.shell   s) >>= kickoff kickoffShell   log p s
-kickoffProgram log p s = createProcess (P.proc s []) >>= kickoff kickoffProgram log p s
+kickoffShell :: Logger -> Process -> String -> IO ()
+kickoffShell log p s = createProcess (P.shell s) >>= kickoff kickoffShell log p s
 
-kickoff f log p s (_stdin, Nothing, _stderr, _pid) = log p "Failure -> Couldn't get STDOUT of Process"
+kickoffProgram :: [String] -> Logger -> Process -> String -> IO ()
+kickoffProgram as log p s = createProcess (P.proc s as) >>= kickoff (kickoffProgram as) log p s
+
+kickoff :: (Logger -> Process -> t -> IO ())
+        -> Logger -> Process -> t
+        -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
+        -> IO ()
+kickoff _ log p _ (_stdin, Nothing, _stderr, _pid) = log p "Failure -> Couldn't get STDOUT of Process"
 kickoff f log p s (_stdin, Just stdout_h, _stderr, pid_h) = do
   untilM (hIsEOF stdout_h) $ do
     l <- hGetLine stdout_h
@@ -146,7 +163,7 @@ kickoff f log p s (_stdin, Just stdout_h, _stderr, pid_h) = do
 untilM :: Monad m => m Bool -> m () -> m ()
 untilM c m = do
   b <- c
-  when (not b) m
+  when (not b) (m >> untilM c m)
 
 createProcess :: P.CreateProcess -> IO (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
 createProcess p = P.createProcess p { P.std_out = P.CreatePipe }

@@ -1,7 +1,7 @@
 resolver: lts-11.4
 
 packages:
-- .
+  - .
 
 extra-deps:
   - concurrent-machines-0.3.1.3

@@ -1,16 +1,16 @@
 ---
-# foo:
-#   process: uname
-#   resume:
-#     - succeed
+foo:
+  process: uname
+  args:
+    - "-a"
 
-bar:
-  shell: "{ for i in `seq 1 10`; do echo bar && sleep 1 } ; done && exit 1"
+bar_:
+  shell: "echo bar && sleep 1 && exit 1"
   resume:
     - fail
 
-      # baz:
-      #   shell: "echo bla"
-      #   resume:
-      #     - succeed
-      #     - fail
+baz__:
+  process: ./test/test.bash
+  resume:
+    - succeed
+    - fail
