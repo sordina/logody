@@ -9,10 +9,11 @@ import Data.Yaml
 import GHC.Generics
 import Control.Monad
 import Data.Maybe
-import System.Exit
 import Data.Either
 import Data.Char
 import System.IO
+import System.Exit
+import System.Environment
 import Data.Map hiding (map, filter)
 import Control.Concurrent.Async
 import qualified System.Process as P
@@ -87,11 +88,20 @@ catEithers l =
   of ([], xs) -> Right xs
      (es, _ ) -> Left (mconcat es)
 
+help :: IO ()
+help = putStrLn "Usage: logdog CONFIG_FILE"
+
 main :: IO ()
 main = do
-  res <- decodeProcesses "test/processes.yaml"
-  case res of Left  es -> print es
-              Right rs -> go rs
+  args <- getArgs
+  case args
+    of []         -> help >> exitFailure
+       ["-h"]     -> help
+       ["--help"] -> help
+       [conf]     -> do
+         res <- decodeProcesses conf
+         case res of Left  es -> print es
+                     Right rs -> go rs
 
 type ChanM a = C.Chan (Maybe a)
 
@@ -116,8 +126,9 @@ type Logger = Process -> String -> IO ()
 
 go :: [Process] -> IO ()
 go ps = do
+  let namewidth = maximum (map (length . name) ps)
   logs <- newLogChan
-  let logger p s = writeChan logs (name p ++ " | " ++ (filter isPrint s))
+  let logger p s = writeChan logs (name p ++ replicate (namewidth - length (name p)) ' ' ++ " | " ++ (filter isPrint s))
   a1 <- async $ mapConcurrently_ (run logger) ps
   a2 <- async $ printLogs logs
   wait a1
