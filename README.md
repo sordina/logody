@@ -8,6 +8,12 @@ Aggregates logs nicely.
 
 Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
 
+## Installing
+
+This is a Haskell codebase.
+
+[You can install logody with stack.](https://docs.haskellstack.org/en/stable/README/)
+
 ## Operation
 
 Two modes of operation:
