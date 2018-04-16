@@ -12,6 +12,8 @@ Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
 
 This was implemented on a Friday afternoon and there may have been beer involved.
 
+Yes, "logdog" is a much better name. [Unfortunately it's already taken.](https://getlogdog.com/)
+
 ## Features
 
 * Run multiple processes in parallel
