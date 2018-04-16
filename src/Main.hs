@@ -231,7 +231,7 @@ manageProcess f log p s (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
        ExitFailure c -> do
          log p ("Failure -> Failed with code " ++ show c)
          when (failure $ resumption $ p) $ do
-           log p ("Restarting process after failure" ++ show c)
+           log p ("Restarting process after failure with exit code " ++ show c)
            f log p s
 
 manageProcess _ log p _ _ = log p "Failure -> Couldn't get handles for process"
