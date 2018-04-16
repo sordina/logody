@@ -210,6 +210,10 @@ manageProcess :: (Logger -> Process -> t -> IO ())
         -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
         -> IO ()
 manageProcess f log p s (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
+
+  hSetBuffering stdout_h LineBuffering
+  hSetBuffering stderr_h LineBuffering
+
   stdout_reader <- async $ untilM (hIsEOF stdout_h) $ do
     l <- hGetLine stdout_h
     log p ("stdout -> " ++ l)
