@@ -2,6 +2,8 @@
 
 Just like docker compose but with normal programs.
 
+![](https://github.com/sordina/logody/raw/master/logody_logo.png)
+
 Aggregates logs nicely.
 
 Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
