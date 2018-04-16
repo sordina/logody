@@ -27,6 +27,8 @@ Yes, "logdog" is a much better name. [Unfortunately it's already taken.](https:/
 * Configure processes to restart on failure
 * Specify subset of configuration processes via arguments
 * Convenient arguments-only mode for simple concurrent processes
+* YAML configuration file format (feature... or bug?)
+* Strips non-printable characters from output
 * Kill all processes easily with Ctrl-C
 
 ## Installing
