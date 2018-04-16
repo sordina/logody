@@ -8,6 +8,10 @@ Aggregates logs nicely.
 
 Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
 
+## Disclaimer
+
+This was implemented on a Friday afternoon and there may have been beer involved.
+
 ## Features
 
 * Run multiple processes in parallel
@@ -22,7 +26,6 @@ Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
 * Specify subset of configuration processes via arguments
 * Convenient arguments-only mode for simple concurrent processes
 * Kill all processes easily with Ctrl-C
-* Useless and better off implemented as a bash-script
 
 ## Installing
 
