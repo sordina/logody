@@ -69,15 +69,14 @@ main = getArgs >>= processArguments
 processArguments :: [String] -> IO ()
 processArguments ("-h":_)     = help
 processArguments ("--help":_) = help
-processArguments ps           = do
+processArguments ps = do
   hPutStrLn stderr "Reading Configuration from Stdin..."
   getContents >>= processConf ps
 
 processConf :: [String] -> String -> IO ()
-processConf ps conf = do
-  res  <- decodeProcesses conf ps
-  case res of Left  es -> print es
-              Right rs -> sallyForth rs
+processConf ps conf
+    = decodeProcesses conf ps
+  >>= either print sallyForth
 
 test :: IO ()
 test = readFile "./test/processes.yaml" >>= processConf []
@@ -218,7 +217,10 @@ startShell :: Logger -> Process -> String -> IO ()
 startShell log p s = createProcess (P.shell s) >>= manage log p >>= cleanup startShell log p s
 
 startProgram :: [String] -> Logger -> Process -> String -> IO ()
-startProgram as log p s = createProcess (P.proc s as) >>= manage log p >>= cleanup (startProgram as) log p s
+startProgram as log p s
+    = createProcess (P.proc s as)
+  >>= manage log p
+  >>= cleanup (startProgram as) log p s
 
 manage :: Logger -> Process
               -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
@@ -257,6 +259,7 @@ cleanup f log p s (Just code) = case code
       when (succeed $ resumption $ p) $ do
         log p "Restarting process after success"
         (f log p s)
+
      ExitFailure c -> do
        log p ("Failure -> Failed with code " ++ show c)
        when (failure $ resumption $ p) $ do
