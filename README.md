@@ -4,6 +4,8 @@ Just like docker compose but with normal programs.
 
 Aggregates logs nicely.
 
+Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
+
 ## Operation
 
 Two modes of operation:
