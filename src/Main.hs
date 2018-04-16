@@ -197,7 +197,7 @@ embark :: Logger -> Process -> IO ()
 embark log p =
   case runner p
     of Shell   s    -> log p ("Starting Process " ++ unpack (encode p)) >> startShell      log p s
-       Program s as -> log p ("Starting Process " ++ show p)            >> startProgram as log p s
+       Program s as -> log p ("Starting Process " ++ unpack (encode p)) >> startProgram as log p s
 
 startShell :: Logger -> Process -> String -> IO ()
 startShell log p s = createProcess (P.shell s) >>= manageProcess startShell log p s

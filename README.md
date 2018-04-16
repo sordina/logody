@@ -50,10 +50,10 @@ Output:
 
 ```
 $ logdog < test/processes.yaml
-testscript | Starting Process P {name = "testscript", runner = Program "./test/test.bash" [], resumption = Resume {succeed = True, failure = True}}
-osname     | Starting Process P {name = "osname", runner = Program "uname" ["-a"], resumption = Resume {succeed = False, failure = False}}
+testscript | Starting Process {"name":"testscript","resumption":{"succeed":true,"failure":true},"runner":{"tag":"Program","contents":["./test/test.bash",[]]}}
+osname     | Starting Process {"name":"osname","resumption":{"succeed":false,"failure":false},"runner":{"tag":"Program","contents":["uname",["-a"]]}}
 echo       | Starting Process {"name":"echo","resumption":{"succeed":false,"failure":true},"runner":{"tag":"Shell","contents":"echo bar && sleep 1 && exit 1"}}
-osname     | stdout -> Darwin host.local xx.x.x Darwin Kernel Version xx.x.x: Thu 2018; ...
+osname     | stdout -> Darwin host.local ...
 echo       | stdout -> bar
 osname     | Exited Successfully
 testscript | stdout -> test.bash 1
@@ -71,6 +71,13 @@ echo       | Restarting process after failure with exit code 1
 echo       | stdout -> bar
 testscript | stdout -> test.bash 8
 testscript | stdout -> test.bash 9
+testscript | stdout -> test.bash 10
+echo       | Failure -> Failed with code 1
+echo       | Restarting process after failure with exit code 1
+echo       | stdout -> bar
+testscript | Exited Successfully
+testscript | Restarting process after success
+testscript | stdout -> test.bash 1
 ^C
 ```
 
