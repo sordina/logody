@@ -4,7 +4,26 @@ Just like docker compose but with normal programs.
 
 Aggregates logs nicely.
 
-Config Example:
+## Operation
+
+Two modes of operation:
+
+* Shell Arguments
+* Configuration
+
+### Shell Arguments
+
+If you don't supply any config input, then the arguments are interpreted as shell strings.
+
+These will be named "process_N" sequentially and run until completion or failure.
+
+### Configuration
+
+If you supply configuration input, then your process list will be defined in the config file format.
+
+Any arguments provided will be used to filter the process list.
+
+#### Config Example
 
 ```
 ---
