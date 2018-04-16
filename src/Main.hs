@@ -76,7 +76,7 @@ main = do
 
 help :: IO ()
 help = do
-  putStrLn "Usage: logdog [SHELL]* [< CONFIG_FILE]"
+  putStrLn "Usage: logdog [SHELL]* < CONFIG_FILE"
   putStrLn ""
   putStrLn "Config Format Example:"
   putStrLn ""
