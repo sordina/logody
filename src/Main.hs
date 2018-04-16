@@ -215,16 +215,15 @@ embark log p =
        Program s as -> log p ("Starting Process " ++ unpack (encode p)) >> startProgram as log p s
 
 startShell :: Logger -> Process -> String -> IO ()
-startShell log p s = createProcess (P.shell s) >>= manageProcess startShell log p s
+startShell log p s = createProcess (P.shell s) >>= manage log p >>= cleanup startShell log p s
 
 startProgram :: [String] -> Logger -> Process -> String -> IO ()
-startProgram as log p s = createProcess (P.proc s as) >>= manageProcess (startProgram as) log p s
+startProgram as log p s = createProcess (P.proc s as) >>= manage log p >>= cleanup (startProgram as) log p s
 
-manageProcess :: (Logger -> Process -> t -> IO ())
-        -> Logger -> Process -> t
-        -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
-        -> IO ()
-manageProcess f log p s (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
+manage :: Logger -> Process
+              -> (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
+              -> IO (Maybe ExitCode)
+manage log p (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
 
   hSetBuffering stdout_h LineBuffering
   hSetBuffering stderr_h LineBuffering
@@ -240,20 +239,29 @@ manageProcess f log p s (_stdin, Just stdout_h, Just stderr_h, pid_h) = do
   wait stdout_reader
   wait stderr_reader
 
-  code <- P.waitForProcess pid_h
-  case code
-    of ExitSuccess -> do
-        log p "Exited Successfully"
-        when (succeed $ resumption $ p) $ do
-          log p "Restarting process after success"
-          (f log p s)
-       ExitFailure c -> do
-         log p ("Failure -> Failed with code " ++ show c)
-         when (failure $ resumption $ p) $ do
-           log p ("Restarting process after failure with exit code " ++ show c)
-           f log p s
+  Just <$> P.waitForProcess pid_h
 
-manageProcess _ log p _ _ = log p "Failure -> Couldn't get handles for process"
+manage log p _ = do
+  log p "Failure -> Couldn't get handles for process"
+  return Nothing
+
+cleanup :: Monad f
+        => ((Process -> [Char] -> f a) -> Process -> t -> f ())
+        -> (Process -> [Char] -> f a)
+        -> Process -> t -> Maybe ExitCode
+        -> f ()
+cleanup _ _ _ _ Nothing = return ()
+cleanup f log p s (Just code) = case code
+  of ExitSuccess -> do
+      log p "Exited Successfully"
+      when (succeed $ resumption $ p) $ do
+        log p "Restarting process after success"
+        (f log p s)
+     ExitFailure c -> do
+       log p ("Failure -> Failed with code " ++ show c)
+       when (failure $ resumption $ p) $ do
+         log p ("Restarting process after failure with exit code " ++ show c)
+         f log p s
 
 untilM :: Monad m => m Bool -> m () -> m ()
 untilM c m = do
