@@ -114,6 +114,7 @@ makeShell i p = P ("process_" ++ show i) (Shell p) (Resume False False)
 
 decodeProcesses :: [String] -> IO ( Either [ParseException] [Process])
 decodeProcesses ps = do
+  hPutStrLn stderr "Reading Configuration from Stdin..."
   conf <- getContents
   case (ps, conf)
     of ([], "") -> return $ crash "pass a config into STDIN, or specify shell arguments"
