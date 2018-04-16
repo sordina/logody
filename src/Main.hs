@@ -78,6 +78,13 @@ help :: IO ()
 help = do
   putStrLn "Usage: logody [SHELL]* < CONFIG_FILE"
   putStrLn ""
+  putStrLn "    echo -n | logody SHELL*"
+  putStrLn "    or..."
+  putStrLn "    logody [NAME]* < CONFIG_FILE"
+  putStrLn ""
+  putStrLn "WARNING: logody will attempt to read STDIN."
+  putStrLn "         echo an empty string as input to skip configuration."
+  putStrLn ""
   putStrLn "Config Format Example:"
   putStrLn ""
   putStrLn "    ---"
