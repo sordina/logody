@@ -21,6 +21,7 @@ Yes, "logdog" is a much better name. [Unfortunately it's already taken.](https:/
 * Indicate process name on log-line
 * Indicate handle on log-line (stdout, stderr)
 * Indicate exit-codes on log-line after termination
+* Aligns process-names and outputs as columns
 * Supply shell strings
 * Supply executables and lists of arguments
 * Configure processes to restart on success
