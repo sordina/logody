@@ -8,6 +8,22 @@ Aggregates logs nicely.
 
 Demo: <https://asciinema.org/a/vJMpIfqfVAxHu8iWdRkNYcXW7>
 
+## Features
+
+* Run multiple processes in parallel
+* Safely interleve logs
+* Indicate process name on log-line
+* Indicate handle on log-line (stdout, stderr)
+* Indicate exit-codes on log-line after termination
+* Supply shell strings
+* Supply executables and lists of arguments
+* Configure processes to restart on success
+* Configure processes to restart on failure
+* Specify subset of configuration processes via arguments
+* Convenient arguments-only mode for simple concurrent processes
+* Kill all processes easily with Ctrl-C
+* Useless and better off implemented as a bash-script
+
 ## Installing
 
 This is a Haskell codebase.
@@ -99,3 +115,4 @@ testscript | stdout -> test.bash 1
 
 * Support other config formats: JSON, Dhall
 * Color Lines
+* Implement all of the applicable Docker-Compose features
