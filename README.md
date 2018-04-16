@@ -92,9 +92,10 @@ testscript | stdout -> test.bash 1
 
 ## Bugs
 
-* Doesn't quit in GHCi when using Ctrl-C
+* No known bugs!
 
 
 ## TODO
 
+* Support other config formats: JSON, Dhall
 * Color Lines

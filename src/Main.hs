@@ -64,15 +64,23 @@ instance ToJSON Resume
 -- Main
 
 main :: IO ()
-main = do
-  as <- getArgs
-  case as
-    of ("-h":_)     -> help
-       ("--help":_) -> help
-       ps           -> do
-         res <- decodeProcesses ps
-         case res of Left  es -> print es
-                     Right rs -> sallyForth rs
+main = getArgs >>= processArguments
+
+processArguments :: [String] -> IO ()
+processArguments ("-h":_)     = help
+processArguments ("--help":_) = help
+processArguments ps           = do
+  hPutStrLn stderr "Reading Configuration from Stdin..."
+  getContents >>= processConf ps
+
+processConf :: [String] -> String -> IO ()
+processConf ps conf = do
+  res  <- decodeProcesses conf ps
+  case res of Left  es -> print es
+              Right rs -> sallyForth rs
+
+test :: IO ()
+test = readFile "./test/processes.yaml" >>= processConf []
 
 help :: IO ()
 help = do
@@ -112,10 +120,8 @@ decodeProcessConfig = decodeEither' . pack
 makeShell :: Int -> String -> Process
 makeShell i p = P ("process_" ++ show i) (Shell p) (Resume False False)
 
-decodeProcesses :: [String] -> IO ( Either [ParseException] [Process])
-decodeProcesses ps = do
-  hPutStrLn stderr "Reading Configuration from Stdin..."
-  conf <- getContents
+decodeProcesses :: String -> [String] -> IO ( Either [ParseException] [Process])
+decodeProcesses conf ps = do
   case (ps, conf)
     of ([], "") -> return $ crash "pass a config into STDIN, or specify shell arguments"
        (_,  "") -> return $ Right $ zipWith makeShell [0..] ps
@@ -195,11 +201,12 @@ sallyForth :: [Process] -> IO ()
 sallyForth ps = do
   logs <- newLogChan
   let logger = makeLogger (maximum (map (length . name) ps)) logs
-  a1 <- async $ mapConcurrently_ (embark logger) ps
-  a2 <- async $ printLogs logs
-  wait a1
-  closeChan logs
-  wait a2
+
+  withAsync (mapConcurrently_ (embark logger) ps) $ \a1 -> do
+    withAsync (printLogs logs) $ \a2 -> do
+      wait a1
+      closeChan logs
+      wait a2
 
 embark :: Logger -> Process -> IO ()
 embark log p =
