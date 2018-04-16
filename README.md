@@ -1,4 +1,4 @@
-# logdog
+# logody
 
 Just like docker compose but with normal programs.
 
@@ -51,7 +51,7 @@ testscript:
 Output:
 
 ```
-$ logdog < test/processes.yaml
+$ logody < test/processes.yaml
 testscript | Starting Process {"name":"testscript","resumption":{"succeed":true,"failure":true},"runner":{"tag":"Program","contents":["./test/test.bash",[]]}}
 osname     | Starting Process {"name":"osname","resumption":{"succeed":false,"failure":false},"runner":{"tag":"Program","contents":["uname",["-a"]]}}
 echo       | Starting Process {"name":"echo","resumption":{"succeed":false,"failure":true},"runner":{"tag":"Shell","contents":"echo bar && sleep 1 && exit 1"}}

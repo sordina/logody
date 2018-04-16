@@ -2,12 +2,12 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fcfd66f0564804e183bf10ad055468c681390ed3e406e55fd008ead8a36461de
+-- hash: 3955bc8f44e49d47a6c60766234476333689bba5f6ed333816395f07fd910ad2
 
-name:           logdog
+name:           logody
 version:        0.1.0.0
 category:       Web
-homepage:       https://github.com/githubuser/logdog#readme
+homepage:       https://github.com/githubuser/logody#readme
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2018 Author name here
@@ -19,7 +19,7 @@ cabal-version:  >= 1.10
 extra-source-files:
     README.md
 
-executable logdog
+executable logody
   main-is: Main.hs
   hs-source-dirs:
       src
@@ -33,5 +33,5 @@ executable logdog
     , process
     , yaml
   other-modules:
-      Paths_logdog
+      Paths_logody
   default-language: Haskell2010

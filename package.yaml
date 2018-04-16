@@ -1,8 +1,8 @@
-name:                logdog
+name:                logody
 version:             0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/githubuser/logdog#readme
+homepage:            https://github.com/githubuser/logody#readme
 license:             BSD3
 author:              Author name here
 maintainer:          example@example.com
@@ -21,7 +21,7 @@ dependencies:
   - bytestring
 
 executables:
-  logdog:
+  logody:
     source-dirs:      src
     main:             Main.hs
     ghc-options:
