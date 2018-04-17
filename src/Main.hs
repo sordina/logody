@@ -1,5 +1,5 @@
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
@@ -199,7 +199,9 @@ makeLogger width logs p s = writeChan logs line
 sallyForth :: [Process] -> IO ()
 sallyForth ps = do
   logs <- newLogChan
-  let logger = makeLogger (maximum (map (length . name) ps)) logs
+  let
+    logger :: Process -> String -> IO ()
+    logger = makeLogger (maximum (map (length . name) ps)) logs
 
   withAsync (mapConcurrently_ (embark logger) ps) $ \a1 -> do
     withAsync (printLogs logs) $ \a2 -> do
@@ -214,12 +216,14 @@ embark log p =
        Program s as -> log p ("Starting Process " ++ unpack (encode p)) >> startProgram as log p s
 
 startShell :: Logger -> Process -> String -> IO ()
-startShell log p s = createProcess (P.shell s) >>= manage log p >>= cleanup startShell log p s
+startShell log p s
+    -- Use withCreateProcess in order to handle exceptions to theads cleanly
+    = withCreateProcess (P.shell s) (\xi xo xe xp -> manage log p (xi, xo, xe, xp))
+  >>= cleanup startShell log p s
 
 startProgram :: [String] -> Logger -> Process -> String -> IO ()
 startProgram as log p s
-    = createProcess (P.proc s as)
-  >>= manage log p
+    = withCreateProcess (P.proc s as) (\xi xo xe xp -> manage log p (xi, xo, xe, xp))
   >>= cleanup (startProgram as) log p s
 
 manage :: Logger -> Process
@@ -247,11 +251,10 @@ manage log p _ = do
   log p "Failure -> Couldn't get handles for process"
   return Nothing
 
-cleanup :: Monad f
-        => ((Process -> [Char] -> f a) -> Process -> t -> f ())
-        -> (Process -> [Char] -> f a)
+cleanup :: (Logger -> Process -> t -> IO ())
+        -> Logger
         -> Process -> t -> Maybe ExitCode
-        -> f ()
+        -> IO ()
 cleanup _ _ _ _ Nothing = return ()
 cleanup f log p s (Just code) = case code
   of ExitSuccess -> do
@@ -273,6 +276,14 @@ untilM c m = do
 
 createProcess :: P.CreateProcess -> IO (Maybe Handle, Maybe Handle, Maybe Handle, P.ProcessHandle)
 createProcess p =
-  P.createProcess p { P.std_out = P.CreatePipe
-                    , P.std_err = P.CreatePipe
-                    }
+  P.createProcess
+    p { P.std_out = P.CreatePipe
+      , P.std_err = P.CreatePipe
+      }
+
+withCreateProcess :: P.CreateProcess -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> P.ProcessHandle -> IO a) -> IO a
+withCreateProcess p =
+  P.withCreateProcess
+    p { P.std_out = P.CreatePipe
+      , P.std_err = P.CreatePipe
+      }
