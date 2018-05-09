@@ -15,6 +15,7 @@ import Data.ByteString.Char8 (pack)
 import Data.Either
 import Data.Char
 import System.IO
+import System.Directory
 import System.Exit
 import System.Environment
 import Data.Map (Map, toAscList)
@@ -67,11 +68,21 @@ main :: IO ()
 main = getArgs >>= processArguments
 
 processArguments :: [String] -> IO ()
-processArguments ("-h":_)     = help
-processArguments ("--help":_) = help
+processArguments ("-h":_)             = help
+processArguments ("--help":_)         = help
+processArguments ("-f"     : "-": ps) = file "STDIN"       >> getContents            >>= processConf ps
+processArguments ("--file" : "-": ps) = file "STDIN"       >> getContents            >>= processConf ps
+processArguments ("-f"     : f  : ps) = file f             >> readFile f             >>= processConf ps
+processArguments ("--file" : f  : ps) = file f             >> readFile f             >>= processConf ps
 processArguments ps = do
-  hPutStrLn stderr "Reading Configuration from Stdin..."
-  getContents >>= processConf ps
+  let conf = "logody.yaml"
+  fe <- doesFileExist conf
+  if fe
+     then file conf    >> readFile conf >>= processConf ps
+     else file "STDIN" >> getContents   >>= processConf ps
+
+file :: String -> IO ()
+file s = hPutStrLn stderr $ "Reading Configuration file " ++ s ++ "..."
 
 processConf :: [String] -> String -> IO ()
 processConf ps conf
@@ -89,7 +100,8 @@ help = do
   putStrLn "    or..."
   putStrLn "    logody [NAME]* < CONFIG_FILE"
   putStrLn ""
-  putStrLn "WARNING: logody will attempt to read STDIN."
+  putStrLn "WARNING: logody will attempt to read logody.yaml"
+  putStrLn "         failing that it will read from STDIN."
   putStrLn "         echo an empty string as input to skip configuration."
   putStrLn ""
   putStrLn "Config Format Example:"

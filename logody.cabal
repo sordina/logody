@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3955bc8f44e49d47a6c60766234476333689bba5f6ed333816395f07fd910ad2
+-- hash: d7111a3a767ab226d2ec44c60e96e8ad9d0114514618bd3f08c8567a70493aa3
 
 name:           logody
 version:        0.1.0.0
@@ -30,6 +30,7 @@ executable logody
     , base >=4.7 && <5
     , bytestring
     , containers
+    , directory
     , process
     , yaml
   other-modules:
