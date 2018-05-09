@@ -70,10 +70,10 @@ main = getArgs >>= processArguments
 processArguments :: [String] -> IO ()
 processArguments ("-h":_)             = help
 processArguments ("--help":_)         = help
-processArguments ("-f"     : "-": ps) = file "STDIN"       >> getContents            >>= processConf ps
-processArguments ("--file" : "-": ps) = file "STDIN"       >> getContents            >>= processConf ps
-processArguments ("-f"     : f  : ps) = file f             >> readFile f             >>= processConf ps
-processArguments ("--file" : f  : ps) = file f             >> readFile f             >>= processConf ps
+processArguments ("-f"     : "-": ps) = file "STDIN" >> getContents >>= processConf ps
+processArguments ("--file" : "-": ps) = file "STDIN" >> getContents >>= processConf ps
+processArguments ("-f"     : f  : ps) = file f       >> readFile f  >>= processConf ps
+processArguments ("--file" : f  : ps) = file f       >> readFile f  >>= processConf ps
 processArguments ps = do
   let conf = "logody.yaml"
   fe <- doesFileExist conf
