@@ -19,6 +19,7 @@ dependencies:
   - containers
   - process
   - bytestring
+  - process-streaming
 
 executables:
   logody:

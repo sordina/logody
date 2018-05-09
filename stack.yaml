@@ -5,3 +5,6 @@ packages:
 
 extra-deps:
   - concurrent-machines-0.3.1.3
+  - process-streaming-0.9.3.0
+  - conceit-0.4.0.0
+  - pipes-transduce-0.4.3.2
