@@ -51,6 +51,20 @@ If you don't supply any config input, then the arguments are interpreted as shel
 
 These will be named "process_N" sequentially and run until completion or failure.
 
+### Usage
+
+    Usage: logody [SHELL]* < CONFIG_FILE
+
+        echo -n | logody SHELL*
+        or...
+        logody [NAME]* < CONFIG_FILE
+
+    Options:
+
+     -h | --help       Print help and usage information.
+     -n | --no-config  Don't read any configuration, just accept shell string arguments.
+     -f | --file       Specify config file. '-' for STDIN.
+
 ### Configuration
 
 If you supply configuration input, then your process list will be defined in the config file format.

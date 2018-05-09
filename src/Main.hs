@@ -70,6 +70,8 @@ main = getArgs >>= processArguments
 processArguments :: [String] -> IO ()
 processArguments ("-h":_)             = help
 processArguments ("--help":_)         = help
+processArguments ("-n": ps)           = processConf ps ""
+processArguments ("--no-config": ps)  = processConf ps ""
 processArguments ("-f"     : "-": ps) = file "STDIN" >> getContents >>= processConf ps
 processArguments ("--file" : "-": ps) = file "STDIN" >> getContents >>= processConf ps
 processArguments ("-f"     : f  : ps) = file f       >> readFile f  >>= processConf ps
@@ -99,6 +101,12 @@ help = do
   putStrLn "    echo -n | logody SHELL*"
   putStrLn "    or..."
   putStrLn "    logody [NAME]* < CONFIG_FILE"
+  putStrLn ""
+  putStrLn "Options:"
+  putStrLn ""
+  putStrLn " -h | --help       Print help and usage information. "
+  putStrLn " -n | --no-config  Don't read any configuration, just accept shell string arguments."
+  putStrLn " -f | --file       Specify config file. '-' for STDIN."
   putStrLn ""
   putStrLn "WARNING: logody will attempt to read logody.yaml"
   putStrLn "         failing that it will read from STDIN."
