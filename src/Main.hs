@@ -70,6 +70,8 @@ main = getArgs >>= processArguments
 processArguments :: [String] -> IO ()
 processArguments ("-h":_)             = help
 processArguments ("--help":_)         = help
+processArguments ("-v":_)             = version
+processArguments ("--version":_)      = version
 processArguments ("-n": ps)           = processConf ps ""
 processArguments ("--no-config": ps)  = processConf ps ""
 processArguments ("-f"     : "-": ps) = file "STDIN" >> getContents >>= processConf ps
@@ -94,17 +96,21 @@ processConf ps conf
 test :: IO ()
 test = readFile "./test/processes.yaml" >>= processConf []
 
+version :: IO ()
+version = putStrLn "0.2"
+
 help :: IO ()
 help = do
   putStrLn "Usage: logody [SHELL]* < CONFIG_FILE"
   putStrLn ""
   putStrLn "    echo -n | logody SHELL*"
   putStrLn "    or..."
-  putStrLn "    logody [NAME]* < CONFIG_FILE"
+  putStrLn "    logody [OPTIONS] [NAME]* < CONFIG_FILE"
   putStrLn ""
   putStrLn "Options:"
   putStrLn ""
-  putStrLn " -h | --help       Print help and usage information. "
+  putStrLn " -h | --help       Print help and usage information."
+  putStrLn " -v | --version    Print version information."
   putStrLn " -n | --no-config  Don't read any configuration, just accept shell string arguments."
   putStrLn " -f | --file       Specify config file. '-' for STDIN."
   putStrLn ""

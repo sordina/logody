@@ -53,7 +53,7 @@ These will be named "process_N" sequentially and run until completion or failure
 
 ### Usage
 
-    Usage: logody [SHELL]* < CONFIG_FILE
+    Usage: logody [OPTIONS] [SHELL]* < CONFIG_FILE
 
         echo -n | logody SHELL*
         or...
@@ -62,6 +62,7 @@ These will be named "process_N" sequentially and run until completion or failure
     Options:
 
      -h | --help       Print help and usage information.
+     -v | --version    Print version information.
      -n | --no-config  Don't read any configuration, just accept shell string arguments.
      -f | --file       Specify config file. '-' for STDIN.
 
