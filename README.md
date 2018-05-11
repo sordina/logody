@@ -14,6 +14,10 @@ This was implemented on a Friday afternoon and there may have been beer involved
 
 Yes, "logdog" is a much better name. [Unfortunately it's already taken.](https://getlogdog.com/)
 
+Before you send an issue about your program not listing output, check the buffering settings.
+Some usual suspects include `grep --line-buffered`, `sed -l`. Remember that GNU and BSD
+arguments are often different!
+
 ## Features
 
 * Run multiple processes in parallel
