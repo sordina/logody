@@ -33,7 +33,7 @@ arguments are often different!
 * Specify subset of configuration processes via arguments
 * Convenient arguments-only mode for simple concurrent processes
 * YAML configuration file format (feature... or bug?)
-* Strips non-printable characters from output
+* Optionally strips non-printable characters from output
 * Kill all processes easily with Ctrl-C
 
 ## Installing
@@ -92,6 +92,7 @@ echo:
 
 testscript:
   process: ./test/test.bash
+  sanitise: False
   resume:
     - succeed
     - fail

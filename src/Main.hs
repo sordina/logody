@@ -26,16 +26,18 @@ import qualified Control.Concurrent.Chan as C
 -- Types and Data
 
 data ProcessConfigItem = PCI
-  { process :: Maybe String
-  , shell   :: Maybe String
-  , resume  :: Maybe [ String ]
-  , args    :: Maybe [ String ]
+  { process  :: Maybe String
+  , shell    :: Maybe String
+  , sanitise :: Maybe Bool
+  , resume   :: Maybe [ String ]
+  , args     :: Maybe [ String ]
   }
   deriving (Show, Generic)
 
 data Process = P
   { name       :: String
   , runner     :: Runner
+  , sane       :: Bool
   , resumption :: Resume
   }
   deriving (Show, Generic)
@@ -133,6 +135,7 @@ help = do
   putStrLn "    "
   putStrLn "    baz__:"
   putStrLn "      process: ./test/test.bash"
+  putStrLn "      sanitise: false"
   putStrLn "      resume:"
   putStrLn "        - succeed"
   putStrLn "        - fail"
@@ -143,7 +146,7 @@ decodeProcessConfig :: String -> Either ParseException (Map String ProcessConfig
 decodeProcessConfig = decodeEither' . pack
 
 makeShell :: Int -> String -> Process
-makeShell i p = P ("process_" ++ show i) (Shell p) (Resume False False)
+makeShell i p = P ("process_" ++ show i) (Shell p) (True) (Resume False False)
 
 decodeProcesses :: String -> [String] -> IO ( Either [ParseException] [Process])
 decodeProcesses conf ps = do
@@ -167,13 +170,16 @@ mapLeft _f (Right b) = Right b
 -- Process Construction
 
 makeProcess :: (String, ProcessConfigItem) -> Either [ParseException] Process
-makeProcess (_, PCI Nothing  Nothing  _ _)            = crash "specify process or a shell"
-makeProcess (_, PCI (Just _) (Just _) _ _)            = crash "specify EITHER a process or a shell"
-makeProcess (_, PCI Nothing  (Just _) _ (Just (_:_))) = crash "shell commands do NOT take arguments"
-makeProcess (n, PCI (Just p) Nothing  r Nothing)      = P n (Program p []) <$> (makeResume r)
-makeProcess (n, PCI (Just p) Nothing  r (Just a))     = P n (Program p a)  <$> (makeResume r)
-makeProcess (n, PCI Nothing  (Just s) r Nothing)      = P n (Shell   s)    <$> (makeResume r)
-makeProcess (n, PCI Nothing  (Just s) r (Just []))    = P n (Shell   s)    <$> (makeResume r)
+makeProcess (_, PCI Nothing  Nothing  _ _ _)            = crash "specify process or a shell"
+makeProcess (_, PCI (Just _) (Just _) _ _ _)            = crash "specify EITHER a process or a shell"
+makeProcess (_, PCI Nothing  (Just _) _ _ (Just (_:_))) = crash "shell commands do NOT take arguments"
+makeProcess (n, PCI (Just p) Nothing  c r Nothing)      = P n (Program p []) (sanity c) <$> (makeResume r)
+makeProcess (n, PCI (Just p) Nothing  c r (Just a))     = P n (Program p a)  (sanity c) <$> (makeResume r)
+makeProcess (n, PCI Nothing  (Just s) c r Nothing)      = P n (Shell   s)    (sanity c) <$> (makeResume r)
+makeProcess (n, PCI Nothing  (Just s) c r (Just []))    = P n (Shell   s)    (sanity c) <$> (makeResume r)
+
+sanity :: Maybe Bool -> Bool
+sanity = fromMaybe True
 
 crash :: String -> Either [ParseException] b
 crash s = Left [ AesonException s ]
@@ -217,7 +223,7 @@ closeChan c = C.writeChan c Nothing
 makeLogger :: Int -> ChanM String -> Process -> String -> IO ()
 makeLogger width logs p s = writeChan logs line
   where
-  line = name p ++ padding ++ " | " ++ (filter isPrint s)
+  line    = name p ++ padding ++ " | " ++ if sane p then (filter isPrint s) else s
   padding = replicate (width - length (name p)) ' '
 
 -- Process Inception and Running
