@@ -223,8 +223,17 @@ closeChan c = C.writeChan c Nothing
 makeLogger :: Int -> ChanM String -> Process -> String -> IO ()
 makeLogger width logs p s = writeChan logs line
   where
-  line    = name p ++ padding ++ " | " ++ if sane p then (filter isPrint s) else s
-  padding = replicate (width - length (name p)) ' '
+  line              = name p ++ padding ++ " | " ++ if sane p then (foo s) else s
+  padding           = replicate (width - length (name p)) ' '
+
+  -- STUPID
+  foo ('\ESC' : '[' : 'H' : xs) = foo xs
+  foo ('\ESC' : '[' : '2' : 'J' : xs) = foo xs
+  foo ('\ESC' : '[' : '3' : '3' : 'm' : xs) = foo xs
+  foo ('\ESC' : '[' : 'm' : xs) = foo xs
+  foo ('\ESC' : xs) = foo xs
+  foo (x : xs)      = x : foo xs
+  foo []            = []
 
 -- Process Inception and Running
 
