@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7111a3a767ab226d2ec44c60e96e8ad9d0114514618bd3f08c8567a70493aa3
+-- hash: e9b343513f16a29e5d5faa6e6ec861a22c39cf1d55a21c8dc9b058ce7f16d3ac
 
 name:           logody
 version:        0.1.0.0
@@ -14,8 +16,6 @@ copyright:      2018 Author name here
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-cabal-version:  >= 1.10
-
 extra-source-files:
     README.md
 

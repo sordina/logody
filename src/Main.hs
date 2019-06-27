@@ -227,8 +227,10 @@ makeLogger width logs p s = writeChan logs line
   padding = replicate (width - length (name p)) ' '
 
   -- STUPID - Should probably use a scheme rather than blocking yellow...
+  -- [3J01913514
   noEscape ('\ESC' : '[' : 'H' : xs)             = noEscape xs
   noEscape ('\ESC' : '[' : '2' : 'J' : xs)       = noEscape xs
+  noEscape ('\ESC' : '[' : '3' : 'J' : xs)       = noEscape xs
   noEscape ('\ESC' : '[' : '3' : '3' : 'm' : xs) = noEscape xs
   noEscape ('\ESC' : '[' : 'm' : xs)             = noEscape xs
   noEscape ('\ESC' : xs)                         = noEscape xs
